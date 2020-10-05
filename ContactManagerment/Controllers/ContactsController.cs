@@ -7,6 +7,7 @@ using System.Net;
 using System.Web;
 using System.Web.Mvc;
 using ContactManagerment.Models;
+using PagedList;
 
 namespace ContactManagerment.Controllers
 {
@@ -15,9 +16,39 @@ namespace ContactManagerment.Controllers
         private ContactManagermentEntities db = new ContactManagermentEntities();
 
         // GET: Contacts
-        public ActionResult Index()
+        public ViewResult Index(string sortOrder, string search, string currentFilter, int? page)
         {
-            return View(db.Contacts.ToList());
+            ViewBag.CurrentSort = sortOrder;
+            ViewBag.NameSortParm = String.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
+            if (search != null)
+            {
+                page = 1; 
+            }
+            else
+            {
+                search = currentFilter;
+            }
+            ViewBag.CurrentFilter = search;
+            var contacts = from s in db.Contacts select s;
+            if (!String.IsNullOrEmpty(search)) 
+            {
+                contacts = contacts.Where(s => s.ContactName.Contains(search)); 
+            }
+            switch (sortOrder)
+            {
+                case "name desc":
+                    contacts = contacts.OrderByDescending(s => s.ContactName);
+                    break;
+
+                default:
+                    contacts = contacts.OrderBy(s => s.ContactName);
+                    break;
+            }
+            int pageSize = 3; //  khai báo số lượng record trên 1 page
+            int pageNumber = (page ?? 1); // page number là page đang chọn nếu không chọn sẽ = 1
+            return View(contacts.ToPagedList(pageNumber, pageSize));
+            /*      var students = db.Students.Include(s => s.Class);*/
+            /*   return View(students.ToList());*/
         }
 
         // GET: Contacts/Details/5
